@@ -7,12 +7,20 @@
 
 import UIKit
 
-//final class TableViewBuilder {
-//    
-//    private let tableView: UITableView
-//    
-//    init(cellID: String, dataSource: UITableViewDataSource, delegate: UITableViewDelegate) {
-//        tableView = UI
-//    }
-//    
-//}
+final class TableViewBuilder {
+    
+    private let tableView: UITableView
+    
+    init(cellID: String, self: UITableViewDataSource & UITableViewDelegate) {
+        tableView = UITableView()
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellID)
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+    }
+    
+    func build() -> UITableView {
+        return tableView
+    }
+    
+}

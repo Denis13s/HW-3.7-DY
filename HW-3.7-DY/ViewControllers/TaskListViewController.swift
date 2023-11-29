@@ -20,12 +20,8 @@ final class TaskListViewController: UIViewController {
     }()
     
     private lazy var tableView: UITableView = {
-        let table = UITableView()
-        table.register(UITableViewCell.self, forCellReuseIdentifier: ViewControllers.taskList.cellID)
-        table.delegate = self
-        table.dataSource = self
-        table.translatesAutoresizingMaskIntoConstraints = false
-        return table
+        let tableView = TableViewBuilder(cellID: ViewControllers.tasks.cellID, self: self)
+        return tableView.build()
     }()
     
     // MARK: ViewDidLoad
