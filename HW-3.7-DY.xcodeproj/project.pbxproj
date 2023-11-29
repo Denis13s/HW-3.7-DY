@@ -14,6 +14,9 @@
 		0429C8A82B175416008A9E14 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0429C8A72B175416008A9E14 /* Enums.swift */; };
 		0429C8AA2B17631C008A9E14 /* TaskViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0429C8A92B17631C008A9E14 /* TaskViewController.swift */; };
 		0429C8AD2B1764CC008A9E14 /* TableViewBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0429C8AC2B1764CC008A9E14 /* TableViewBuilder.swift */; };
+		0429C8AF2B176725008A9E14 /* AlertControllerBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0429C8AE2B176725008A9E14 /* AlertControllerBuilder.swift */; };
+		0429C8B12B176983008A9E14 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0429C8B02B176983008A9E14 /* Models.swift */; };
+		0429C8B42B178095008A9E14 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0429C8B32B178095008A9E14 /* StorageManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +29,9 @@
 		0429C8A72B175416008A9E14 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		0429C8A92B17631C008A9E14 /* TaskViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskViewController.swift; sourceTree = "<group>"; };
 		0429C8AC2B1764CC008A9E14 /* TableViewBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableViewBuilder.swift; sourceTree = "<group>"; };
+		0429C8AE2B176725008A9E14 /* AlertControllerBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertControllerBuilder.swift; sourceTree = "<group>"; };
+		0429C8B02B176983008A9E14 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		0429C8B32B178095008A9E14 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +64,7 @@
 		0429C8892B1750E3008A9E14 /* HW-3.7-DY */ = {
 			isa = PBXGroup;
 			children = (
+				0429C8B22B178084008A9E14 /* Services */,
 				0429C8AB2B176475008A9E14 /* Factories */,
 				0429C8A62B175409008A9E14 /* Models */,
 				0429C8A02B1752CC008A9E14 /* Resources */,
@@ -98,6 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				0429C8A72B175416008A9E14 /* Enums.swift */,
+				0429C8B02B176983008A9E14 /* Models.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -106,8 +114,17 @@
 			isa = PBXGroup;
 			children = (
 				0429C8AC2B1764CC008A9E14 /* TableViewBuilder.swift */,
+				0429C8AE2B176725008A9E14 /* AlertControllerBuilder.swift */,
 			);
 			path = Factories;
+			sourceTree = "<group>";
+		};
+		0429C8B22B178084008A9E14 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				0429C8B32B178095008A9E14 /* StorageManager.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -179,8 +196,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0429C8AF2B176725008A9E14 /* AlertControllerBuilder.swift in Sources */,
 				0429C88B2B1750E3008A9E14 /* AppDelegate.swift in Sources */,
 				0429C8AD2B1764CC008A9E14 /* TableViewBuilder.swift in Sources */,
+				0429C8B42B178095008A9E14 /* StorageManager.swift in Sources */,
+				0429C8B12B176983008A9E14 /* Models.swift in Sources */,
 				0429C88D2B1750E3008A9E14 /* SceneDelegate.swift in Sources */,
 				0429C8AA2B17631C008A9E14 /* TaskViewController.swift in Sources */,
 				0429C8A82B175416008A9E14 /* Enums.swift in Sources */,

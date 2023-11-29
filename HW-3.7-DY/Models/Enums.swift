@@ -7,21 +7,25 @@
 
 import Foundation
 
+enum UserDefaultsKeys: String {
+    case initialLaunch
+}
+
 enum ViewControllers {
-    case taskList
-    case tasks
+    case taskListVC
+    case taskVC
     
     var title: String {
         switch self {
-        case .taskList: return "Task List"
-        case .tasks: return "Tasks"
+        case .taskListVC: return "Task List"
+        case .taskVC: return "Tasks"
         }
     }
     
     var cellID: String {
         switch self {
-        case .taskList: return "cellTaskList"
-        case .tasks: return "cellTask"
+        case .taskListVC: return "cellTaskList"
+        case .taskVC: return "cellTask"
         }
     }
 }
