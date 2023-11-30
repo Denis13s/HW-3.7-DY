@@ -30,3 +30,15 @@ enum ViewControllers {
     }
 }
 
+enum TaskListKeys: String {
+    case title
+    case date
+    case tasks
+}
+
+enum TaskKeys: String {
+    case title
+    case note
+    case date
+    case isComplete
+}

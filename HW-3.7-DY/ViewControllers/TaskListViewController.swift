@@ -6,12 +6,13 @@
 //
 
 import UIKit
+import RealmSwift
 
 final class TaskListViewController: UIViewController {
     
     // MARK: Properties
     private var storageManager = StorageManager.shared
-    private var taskLists: [TaskList] = []
+    private var taskLists: Results<TaskList>!
     
     // MARK: UI
     private lazy var segmentedControl: UISegmentedControl = {
@@ -39,8 +40,8 @@ final class TaskListViewController: UIViewController {
     // MARK: ViewDidLoad
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupUI()
         fetchData()
+        setupUI()
     }
     
 }
@@ -49,22 +50,40 @@ final class TaskListViewController: UIViewController {
 private extension TaskListViewController {
     
     func fetchData() {
-        storageManager.fetchData(type: [TaskList].self) { taskLists in
+        
+        storageManager.fetchData { taskLists in
+            self.taskLists = taskLists
             self.activityIndicator.stopAnimating()
-            
-            var index = 0
-            var delay = 0.0
-            
-            taskLists.forEach { taskList in
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    self.taskLists.append(taskList)
-                    self.tableView.insertRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
-                    index += 1
-                }
-                delay += 0.35
-            }
-            
+            /** MARK: No need to reload, because table view isn't initialized yet
+            self.tableView.reloadData()
+             */
         }
+        
+//        print("fetch: \(taskLists)")
+//        storageManager.fetchData() {
+//            print("sM.fetch: \(self.taskLists)")
+//            self.taskLists = $0
+//            print("sM.fetch: \(self.taskLists)")
+//            print("Reloading tableView")
+//            self.tableView.reloadData()
+//        }
+        
+//        storageManager.fetchData(type: List<TaskList>.self) { taskLists in
+//
+//            
+//            var index = 0
+//            var delay = 0.0
+//            
+//            taskLists.forEach { taskList in
+//                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+//                    self.taskLists.append(taskList)
+//                    self.tableView.insertRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+//                    index += 1
+//                }
+//                delay += 0.35
+//            }
+//            
+//        }
     }
     
     @objc func buttonAddPressed() { showAlert() }
@@ -73,9 +92,11 @@ private extension TaskListViewController {
         let alert = AlertControllerBuilder(title: "Restore Defaults?", message: "App will terminate")
         alert.addActionCancel()
         alert.addAction(title: "Proceed", style: .default) {
-            UserDefaults.standard.set(false, forKey: UserDefaultsKeys.initialLaunch.rawValue)
+            print("Trash: \(UserDefaults.standard.bool(forKey: UserDefaultsKeys.initialLaunch.rawValue))")
+            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.initialLaunch.rawValue)
+            print("Trash: \(UserDefaults.standard.bool(forKey: UserDefaultsKeys.initialLaunch.rawValue))")
             self.storageManager.clearData()
-            exit(0)
+//            exit(0)
         }
         present(alert.build(), animated: true)
     }
@@ -87,11 +108,11 @@ private extension TaskListViewController {
             present(alert.build(), animated: true)
             return
         }
-        let taskList = TaskList(title: title)
-        storageManager.save(taskList: taskList) {
-            self.taskLists.insert(taskList, at: 0)
-            self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
-        }
+//        let taskList = TaskList(title: title)
+//        storageManager.save(taskList: taskList) {
+//            self.taskLists.insert(taskList, at: 0)
+//            self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
+//        }
     }
     
     func edit(_ taskList: TaskList) {}
@@ -143,6 +164,7 @@ private extension TaskListViewController {
             UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(buttonAddPressed)),
             UIBarButtonItem(barButtonSystemItem: .trash, target: self, action: #selector(buttonTrashPressed))
         ]
+        
         setupSubviews(segmentedControl, tableView, activityIndicator)
         setupConstraints()
     }
@@ -173,7 +195,7 @@ private extension TaskListViewController {
 extension TaskListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        taskLists.count
+        return taskLists.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -202,7 +224,7 @@ extension TaskListViewController: UITableViewDataSource, UITableViewDelegate {
         let taskList = taskLists[indexPath.row]
         
         let actionDelete = UIContextualAction(style: .destructive, title: "Delete") { _, _, _ in
-            self.taskLists.remove(at: indexPath.row)
+//            self.taskLists.remove(at: indexPath.row)
             tableView.deleteRows(at: [indexPath], with: .automatic)
         }
         

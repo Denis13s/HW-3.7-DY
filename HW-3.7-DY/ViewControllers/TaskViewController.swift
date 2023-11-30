@@ -71,12 +71,12 @@ private extension TaskViewController {
             present(alert.build(), animated: true)
             return
         }
-        let task = Task(title: title, note: description)
+//        let task = Task(title: title, note: description)
         
         self.taskList.tasks.forEach( { print("TaskList0: \($0.title)") } )
-        storageManager.save(task: task, to: taskList) {
-            self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
-        }
+//        storageManager.save(task: task, to: taskList) {
+//            self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
+//        }
     }
     
     // TODO: Implement
