@@ -13,14 +13,11 @@ final class AlertControllerBuilder {
     
     init(title: String, message: String?) {
         alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        print("\(String(describing: self)): \(#function)")
     }
     
     func build() -> UIAlertController {
         return alert
     }
-    
-    deinit { print("\(String(describing: self)): \(#function)") }
     
 }
 

@@ -17,7 +17,7 @@ final class TaskListViewController: UIViewController {
     // MARK: UI
     private lazy var segmentedControl: UISegmentedControl = {
         let control = UISegmentedControl()
-        control.insertSegment(withTitle: "Data", at: 0, animated: false)
+        control.insertSegment(withTitle: "Date", at: 0, animated: false)
         control.insertSegment(withTitle: "A-Z", at: 1, animated: false)
         control.selectedSegmentIndex = 0
         control.translatesAutoresizingMaskIntoConstraints = false
@@ -89,14 +89,11 @@ private extension TaskListViewController {
     @objc func buttonAddPressed() { showAlert() }
     
     @objc func buttonTrashPressed() {
-        let alert = AlertControllerBuilder(title: "Restore Defaults?", message: "App will terminate")
+        let alert = AlertControllerBuilder(title: "Clear Stored Data", message: nil)
         alert.addActionCancel()
         alert.addAction(title: "Proceed", style: .default) {
-            print("Trash: \(UserDefaults.standard.bool(forKey: UserDefaultsKeys.initialLaunch.rawValue))")
-            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.initialLaunch.rawValue)
-            print("Trash: \(UserDefaults.standard.bool(forKey: UserDefaultsKeys.initialLaunch.rawValue))")
             self.storageManager.clearData()
-//            exit(0)
+            self.tableView.reloadData()
         }
         present(alert.build(), animated: true)
     }
@@ -108,21 +105,32 @@ private extension TaskListViewController {
             present(alert.build(), animated: true)
             return
         }
-//        let taskList = TaskList(title: title)
-//        storageManager.save(taskList: taskList) {
-//            self.taskLists.insert(taskList, at: 0)
-//            self.tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
-//        }
+        let taskList = TaskList()
+        taskList.title = title
+        storageManager.save(taskList: taskList) {
+            self.tableView.insertRows(at: [IndexPath(row: self.taskLists.count - 1, section: 0)], with: .automatic)
+        }
     }
     
-    func edit(_ taskList: TaskList) {}
+    func edit(_ taskList: TaskList, with title: String?, index: Int) {
+        guard let title, !title.isEmpty else {
+            let alert = AlertControllerBuilder(title: "Title can't be empty", message: nil)
+                .addAction(title: "OK", style: .cancel, handler: nil)
+            present(alert.build(), animated: true)
+            return
+        }
+        storageManager.edit(taskList: taskList, with: title) {
+            self.tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+            print(index)
+        }
+    }
     
 }
 
 // MARK: Alert
 private extension TaskListViewController {
     
-    private func showAlert(edit taskList: TaskList? = nil) {
+    private func showAlert(edit taskList: TaskList? = nil, index: Int? = nil) {
         let alert = AlertControllerBuilder(
             title: "\(taskList == nil ? "New" : "Edit") Task List",
             message: "Enter the title"
@@ -132,7 +140,7 @@ private extension TaskListViewController {
             .addTextField(placeholder: "List Title", text: taskList == nil ? nil : "\(taskList?.title ?? "")")
             .addActionCancel()
             .addAction(title: taskList == nil ? "Save" : "Save Shanges", style: .default) { [unowned self] in
-                taskList == nil ? save(title: alert.firstTextFieldText()) : edit(taskList!)
+                taskList == nil ? save(title: alert.firstTextFieldText()) : edit(taskList!, with: alert.firstTextFieldText(), index: index ?? 0)
             }
         
         present(alert.build(), animated: true)
@@ -159,11 +167,15 @@ private extension TaskListViewController {
         navigationController?.navigationBar.standardAppearance = navBarAppearance
         navigationController?.navigationBar.scrollEdgeAppearance = navBarAppearance
         
+        /*
         navigationItem.leftBarButtonItem = editButtonItem
         navigationItem.rightBarButtonItems = [
             UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(buttonAddPressed)),
             UIBarButtonItem(barButtonSystemItem: .trash, target: self, action: #selector(buttonTrashPressed))
         ]
+         */
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .trash, target: self, action: #selector(buttonTrashPressed))
+        navigationItem.rightBarButtonItem =  UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(buttonAddPressed))
         
         setupSubviews(segmentedControl, tableView, activityIndicator)
         setupConstraints()
@@ -206,12 +218,21 @@ extension TaskListViewController: UITableViewDataSource, UITableViewDelegate {
         
         var content = cell.defaultContentConfiguration()
         content.text = taskList.title
-        content.secondaryText = taskList.tasks.count.formatted()
+        
+        var isComplete = true
+        
+        taskList.tasks.forEach {
+            if !$0.isComplete {
+                isComplete = false
+            }
+        }
+        
+        content.secondaryText = isComplete ? "✓" : taskList.tasks.count.formatted()
         cell.contentConfiguration = content
         
         return cell
     }
-
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let taskVC = TaskViewController()
@@ -221,21 +242,27 @@ extension TaskListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         
-        let taskList = taskLists[indexPath.row]
+        let index = indexPath.row
+        let taskList = taskLists[index]
         
         let actionDelete = UIContextualAction(style: .destructive, title: "Delete") { _, _, _ in
-//            self.taskLists.remove(at: indexPath.row)
-            tableView.deleteRows(at: [indexPath], with: .automatic)
+            self.storageManager.delete(taskList: taskList) {
+                tableView.deleteRows(at: [indexPath], with: .automatic)
+            }
         }
         
         let actionEdit = UIContextualAction(style: .normal, title: "Edit") { _, _, isDone in
-            self.edit(taskList)
+            self.showAlert(edit: taskList, index: index)
             isDone(true)
         }
         
         let actionDone = UIContextualAction(style: .normal, title: "Done") { _, _, isDone in
-            tableView.reloadRows(at: [indexPath], with: .automatic)
-            isDone(true)
+            self.storageManager.done(taskList: taskList) {
+                print(taskList)
+                tableView.reloadRows(at: [indexPath], with: .automatic)
+                print(taskList)
+                isDone(true)
+            }
         }
         
         actionEdit.backgroundColor = .orange

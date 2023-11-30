@@ -17,13 +17,10 @@ final class TableViewBuilder {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.translatesAutoresizingMaskIntoConstraints = false
-        print("\(String(describing: self)): \(#function)")
     }
     
     func build() -> UITableView {
         return tableView
     }
-    
-    deinit { print("\(String(describing: self)): \(#function)") }
     
 }

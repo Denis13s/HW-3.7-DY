@@ -12,9 +12,7 @@ final class StorageManager {
     
     static let shared = StorageManager()
     
-    let realm: Realm
-    
-    //    private var taskLists = [TaskList]()
+    private let realm: Realm
     
     private init() {
         do {
