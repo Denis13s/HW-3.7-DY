@@ -26,39 +26,26 @@ final class StorageManager {
 
 extension StorageManager {
     
-    func fetchData(completion: ((Results<TaskList>) -> Void)) {
+    func fetchData<T>(_ type: T.Type) -> Results<T> where T: RealmFetchable {
         
-        if UserDefaults.standard.bool(forKey: UserDefaultsKeys.initialLaunch.rawValue) {
-            print("It's the first App launch")
-            TaskList.examples().forEach { self.save(taskList: $0) }
+        if type is TaskList.Type, UserDefaults.standard.bool(forKey: UserDefaultsKeys.initialLaunch.rawValue) {
+            write { realm.add(TaskList.examples()) }
             UserDefaults.standard.set(false, forKey: UserDefaultsKeys.initialLaunch.rawValue)
         }
-        else {
-            print("It's not the first App launch")
-        }
         
-        completion(self.realm.objects(TaskList.self))
-            
-            
-            
-//            if let data = realm.objects(type) {
-//                DispatchQueue.main.async {
-//                    if !UserDefaults.standard.bool(forKey: UserDefaultsKeys.initialLaunch.rawValue) {
-//                        TaskList.examples().forEach { save(taskList: $0, completion: nil) }
-//                        
-//                    } else {
-//                        completion?(data)
-//                    }
-//                }
-//            } else {
-//                print("Wrong type for fetching data")
-//            }
-//        }
+        return realm.objects(T.self)
     }
     
     func clearData(completion: (() -> Void)? = nil) {
         write {
             realm.deleteAll()
+            completion?()
+        }
+    }
+    
+    func clearTasks(for taskList: TaskList, completion: (() -> Void)? = nil) {
+        write {
+            realm.delete(taskList.tasks)
             completion?()
         }
     }
@@ -69,32 +56,36 @@ extension StorageManager {
     
     // MARK: TaskList
     func save(taskList: TaskList, completion: (() -> Void)? = nil) {
-        //        taskLists.append(taskList)
         write {
-            let taskList = TaskList(value: taskList)
             realm.add(taskList)
             completion?()
         }
     }
     
     func edit(taskList: TaskList, with title: String, completion: (() -> Void)? = nil) {
-        //        taskLists.first { $0 === taskList }?.title = title
         write {
             taskList.title = title
             completion?()
         }
     }
     
-    func done(taskList: TaskList, completion: (() -> Void)? = nil) {
-        //        taskLists.first { $0 === taskList }?.tasks.forEach { $0.isComplete = true }
+    func undone(taskList: TaskList, completion: (() -> Void)? = nil) {
         write {
+            taskList.setValue(false, forKey: TaskListKeys.isComplete.rawValue)
+            taskList.tasks.setValue(false, forKey: TaskKeys.isComplete.rawValue)
+            completion?()
+        }
+    }
+    
+    func done(taskList: TaskList, completion: (() -> Void)? = nil) {
+        write {
+            taskList.setValue(true, forKey: TaskListKeys.isComplete.rawValue)
             taskList.tasks.setValue(true, forKey: TaskKeys.isComplete.rawValue)
             completion?()
         }
     }
     
     func delete(taskList: TaskList, completion: (() -> Void)? = nil) {
-        //        taskLists.removeAll { $0 === taskList }
         write {
             realm.delete(taskList.tasks)
             realm.delete(taskList)
@@ -104,16 +95,70 @@ extension StorageManager {
     
     // MARK: Task
     func save(task: Task, to taskList: TaskList, completion: (() -> Void)? = nil) {
-        //        taskLists.first { $0 === taskList }?.tasks.insert(task, at: 0)
         write {
             taskList.tasks.append(task)
+            taskList.isComplete = false
             completion?()
+        }
+    }
+    
+    func edit(taskList: TaskList, for task: Task, with title: String, and description: String?, completion: (() -> Void)? = nil) {
+        write {
+            if let index = taskList.tasks.index(of: task) {
+                taskList.tasks[index].title = title
+                taskList.tasks[index].note = description ?? ""
+                completion?()
+            }
+        }
+    }
+    
+    func undone(taskList: TaskList, for task: Task, completion: (() -> Void)? = nil) {
+        write {
+            if let index = taskList.tasks.index(of: task) {
+                taskList.tasks[index].isComplete = false
+                
+                taskList.isComplete = false
+                
+                completion?()
+            }
+        }
+    }
+    
+    func done(taskList: TaskList, for task: Task, completion: (() -> Void)? = nil) {
+        write {
+            if let index = taskList.tasks.index(of: task) {
+                taskList.tasks[index].isComplete = true
+                
+                updateIsComplete(for: taskList)
+                
+                completion?()
+            }
+        }
+    }
+    
+    func delete(taskList: TaskList, for task: Task, completion: (() -> Void)? = nil)  {
+        write {
+            if let index = taskList.tasks.index(of: task) {
+                realm.delete(taskList.tasks[index])
+                completion?()
+            }
         }
     }
     
 }
 
 private extension StorageManager {
+    
+    func updateIsComplete(for taskList: TaskList) {
+        for task in taskList.tasks {
+            if !task.isComplete {
+                taskList.isComplete = false
+                return
+            }
+        }
+        
+        taskList.isComplete = true
+    }
     
     func write(completion: () -> Void) {
         do {

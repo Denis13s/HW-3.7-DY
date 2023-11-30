@@ -34,6 +34,7 @@ enum TaskListKeys: String {
     case title
     case date
     case tasks
+    case isComplete
 }
 
 enum TaskKeys: String {

@@ -20,6 +20,7 @@ final class TaskListViewController: UIViewController {
         control.insertSegment(withTitle: "Date", at: 0, animated: false)
         control.insertSegment(withTitle: "A-Z", at: 1, animated: false)
         control.selectedSegmentIndex = 0
+        control.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
         control.translatesAutoresizingMaskIntoConstraints = false
         return control
     }()
@@ -44,46 +45,29 @@ final class TaskListViewController: UIViewController {
         setupUI()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tableView.reloadData()
+    }
+    
 }
 
 // MARK: Private Methods
 private extension TaskListViewController {
     
     func fetchData() {
-        
-        storageManager.fetchData { taskLists in
-            self.taskLists = taskLists
-            self.activityIndicator.stopAnimating()
-            /** MARK: No need to reload, because table view isn't initialized yet
-            self.tableView.reloadData()
-             */
+        taskLists = storageManager.fetchData(TaskList.self)
+        taskLists = taskLists.sorted(by: \TaskList.date, ascending: false)
+        activityIndicator.stopAnimating()
+    }
+    
+    @objc func segmentChanged(_ sender: UISegmentedControl) {
+        switch sender.selectedSegmentIndex {
+        case 0: taskLists = taskLists.sorted(by: \TaskList.date, ascending: false)
+        case 1: taskLists = taskLists.sorted(by: \TaskList.title, ascending: true)
+        default: break
         }
-        
-//        print("fetch: \(taskLists)")
-//        storageManager.fetchData() {
-//            print("sM.fetch: \(self.taskLists)")
-//            self.taskLists = $0
-//            print("sM.fetch: \(self.taskLists)")
-//            print("Reloading tableView")
-//            self.tableView.reloadData()
-//        }
-        
-//        storageManager.fetchData(type: List<TaskList>.self) { taskLists in
-//
-//            
-//            var index = 0
-//            var delay = 0.0
-//            
-//            taskLists.forEach { taskList in
-//                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-//                    self.taskLists.append(taskList)
-//                    self.tableView.insertRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
-//                    index += 1
-//                }
-//                delay += 0.35
-//            }
-//            
-//        }
+        tableView.reloadData()
     }
     
     @objc func buttonAddPressed() { showAlert() }
@@ -100,29 +84,24 @@ private extension TaskListViewController {
     
     func save(title: String?) {
         guard let title, !title.isEmpty else {
-            let alert = AlertControllerBuilder(title: "Title can't be empty", message: nil)
-                .addAction(title: "OK", style: .cancel, handler: nil)
-            present(alert.build(), animated: true)
+            showAlertError(title: "Title can't be empty")
             return
         }
+        
         let taskList = TaskList()
         taskList.title = title
+        
         storageManager.save(taskList: taskList) {
-            self.tableView.insertRows(at: [IndexPath(row: self.taskLists.count - 1, section: 0)], with: .automatic)
+            self.tableView.insertRows(at: [IndexPath(row: self.taskLists.index(of: taskList) ?? 0, section: 0)], with: .automatic)
         }
     }
     
-    func edit(_ taskList: TaskList, with title: String?, index: Int) {
+    func edit(_ taskList: TaskList, with title: String?) {
         guard let title, !title.isEmpty else {
-            let alert = AlertControllerBuilder(title: "Title can't be empty", message: nil)
-                .addAction(title: "OK", style: .cancel, handler: nil)
-            present(alert.build(), animated: true)
+            showAlertError(title: "Title can't be empty")
             return
         }
-        storageManager.edit(taskList: taskList, with: title) {
-            self.tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
-            print(index)
-        }
+        storageManager.edit(taskList: taskList, with: title)
     }
     
 }
@@ -130,7 +109,14 @@ private extension TaskListViewController {
 // MARK: Alert
 private extension TaskListViewController {
     
-    private func showAlert(edit taskList: TaskList? = nil, index: Int? = nil) {
+    private func showAlertError(title: String) {
+        let alert = AlertControllerBuilder(title: title, message: nil)
+            .addAction(title: "OK", style: .cancel, handler: nil)
+        present(alert.build(), animated: true)
+        return
+    }
+    
+    private func showAlert(edit taskList: TaskList? = nil, completion: (() -> Void)? = nil) {
         let alert = AlertControllerBuilder(
             title: "\(taskList == nil ? "New" : "Edit") Task List",
             message: "Enter the title"
@@ -140,7 +126,12 @@ private extension TaskListViewController {
             .addTextField(placeholder: "List Title", text: taskList == nil ? nil : "\(taskList?.title ?? "")")
             .addActionCancel()
             .addAction(title: taskList == nil ? "Save" : "Save Shanges", style: .default) { [unowned self] in
-                taskList == nil ? save(title: alert.firstTextFieldText()) : edit(taskList!, with: alert.firstTextFieldText(), index: index ?? 0)
+                if let taskList {
+                    edit(taskList, with: alert.firstTextFieldText())
+                    completion?()
+                } else {
+                    save(title: alert.firstTextFieldText())
+                }
             }
         
         present(alert.build(), animated: true)
@@ -168,11 +159,11 @@ private extension TaskListViewController {
         navigationController?.navigationBar.scrollEdgeAppearance = navBarAppearance
         
         /*
-        navigationItem.leftBarButtonItem = editButtonItem
-        navigationItem.rightBarButtonItems = [
-            UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(buttonAddPressed)),
-            UIBarButtonItem(barButtonSystemItem: .trash, target: self, action: #selector(buttonTrashPressed))
-        ]
+         navigationItem.leftBarButtonItem = editButtonItem
+         navigationItem.rightBarButtonItems = [
+         UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(buttonAddPressed)),
+         UIBarButtonItem(barButtonSystemItem: .trash, target: self, action: #selector(buttonTrashPressed))
+         ]
          */
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .trash, target: self, action: #selector(buttonTrashPressed))
         navigationItem.rightBarButtonItem =  UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(buttonAddPressed))
@@ -207,11 +198,10 @@ private extension TaskListViewController {
 extension TaskListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return taskLists.count
+        taskLists.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-//        let cell = tableView.dequeueReusableCell(withIdentifier: ViewControllers.taskList.cellID, for: indexPath)
         let cell = UITableViewCell(style: .value1, reuseIdentifier: ViewControllers.taskListVC.cellID)
         
         let taskList = taskLists[indexPath.row]
@@ -219,15 +209,14 @@ extension TaskListViewController: UITableViewDataSource, UITableViewDelegate {
         var content = cell.defaultContentConfiguration()
         content.text = taskList.title
         
-        var isComplete = true
-        
-        taskList.tasks.forEach {
-            if !$0.isComplete {
-                isComplete = false
-            }
+        if taskList.isComplete {
+            content.secondaryText = nil
+            cell.accessoryType = .checkmark
+        } else {
+            content.secondaryText = taskList.tasks.count.formatted()
+            cell.accessoryType = .none
         }
         
-        content.secondaryText = isComplete ? "✓" : taskList.tasks.count.formatted()
         cell.contentConfiguration = content
         
         return cell
@@ -242,8 +231,7 @@ extension TaskListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         
-        let index = indexPath.row
-        let taskList = taskLists[index]
+        let taskList = taskLists[indexPath.row]
         
         let actionDelete = UIContextualAction(style: .destructive, title: "Delete") { _, _, _ in
             self.storageManager.delete(taskList: taskList) {
@@ -252,16 +240,23 @@ extension TaskListViewController: UITableViewDataSource, UITableViewDelegate {
         }
         
         let actionEdit = UIContextualAction(style: .normal, title: "Edit") { _, _, isDone in
-            self.showAlert(edit: taskList, index: index)
+            self.showAlert(edit: taskList) {
+                tableView.reloadRows(at: [indexPath], with: .automatic)
+            }
             isDone(true)
         }
         
-        let actionDone = UIContextualAction(style: .normal, title: "Done") { _, _, isDone in
-            self.storageManager.done(taskList: taskList) {
-                print(taskList)
-                tableView.reloadRows(at: [indexPath], with: .automatic)
-                print(taskList)
-                isDone(true)
+        let actionDone = UIContextualAction(style: .normal, title: taskList.isComplete ? "Undone" : "Done") { _, _, isDone in
+            if taskList.isComplete {
+                self.storageManager.undone(taskList: taskList) {
+                    tableView.reloadRows(at: [indexPath], with: .automatic)
+                    isDone(true)
+                }
+            } else {
+                self.storageManager.done(taskList: taskList) {
+                    tableView.reloadRows(at: [indexPath], with: .automatic)
+                    isDone(true)
+                }
             }
         }
         

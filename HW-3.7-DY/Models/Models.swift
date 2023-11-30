@@ -12,6 +12,7 @@ final class TaskList: Object {
     @Persisted var title = ""
     @Persisted var date = Date()
     @Persisted var tasks = List<Task>()
+    @Persisted var isComplete = false
 }
 
 final class Task: Object {
